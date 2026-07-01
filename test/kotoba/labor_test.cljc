@@ -31,3 +31,17 @@
   (is (= :unknown-wage-type
          (:labor/error (labor/validate-contract {:contract/id "C1" :contract/wage-type :piece}))))
   (is (= :not-a-map (:labor/error (labor/validate-contract "x")))))
+
+(deftest contract-edge-cases
+  (testing "unknown wage type is rejected"
+    (is (nil? (labor/contract "C1" "W" "E" "r" :piece-rate 100))))
+  (testing "validate-contract rejects non-map"
+    (is (= :not-a-map (:labor/error (labor/validate-contract "x"))))))
+
+(deftest payroll-edge-cases
+  (testing "default deductions zero and net equals gross"
+    (let [p (labor/payroll "P1" "W" "2026-07" 1000)]
+      (is (zero? (:payroll/deductions p)))
+      (is (= 1000 (:payroll/net p)))))
+  (testing "net = gross - deductions"
+    (is (= 8000 (:payroll/net (labor/payroll "P1" "W" "2026-07" 10000 :deductions 2000))))))
