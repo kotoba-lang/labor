@@ -1,0 +1,33 @@
+(ns kotoba.labor-test
+  (:require [clojure.test :refer [deftest is testing]]
+            [kotoba.labor :as labor]))
+
+(deftest contract-test
+  (is (= :hourly (:contract/wage-type (labor/contract "C1" "W" "E" "nanny" :hourly 1500))))
+  (is (= :monthly (:contract/wage-type (labor/contract "C1" "W" "E" "housekeeper" :monthly 300000))))
+  (is (nil? (labor/contract "C1" "W" "E" "x" :piece-rate 100))))
+
+(deftest wages-test
+  (testing "hourly wages = rate * total hours"
+    (let [c (labor/contract "C1" "W" "E" "nanny" :hourly 1500)
+          ts [(labor/timesheet "W" "2026-07-01" 8)
+              (labor/timesheet "W" "2026-07-02" 6)]]
+      (is (= 14 (labor/total-hours ts)))
+      (is (= 21000 (labor/wages-for c ts)))))
+  (testing "monthly wages = rate regardless of entries"
+    (let [c (labor/contract "C1" "W" "E" "housekeeper" :monthly 300000)]
+      (is (= 300000 (labor/wages-for c [])))
+      (is (= 300000 (labor/wages-for c [(labor/timesheet "W" "d" 200)]))))))
+
+(deftest payroll-test
+  (let [p (labor/payroll "P1" "W" "2026-07" 21000 :deductions 2000)]
+    (is (= 19000 (:payroll/net p))))
+  (testing "default deductions zero"
+    (is (zero? (:payroll/deductions (labor/payroll "P1" "W" "2026-07" 1000))))))
+
+(deftest validate-contract-test
+  (is (true? (:labor/valid? (labor/validate-contract
+                              (labor/contract "C1" "W" "E" "r" :hourly 100)))))
+  (is (= :unknown-wage-type
+         (:labor/error (labor/validate-contract {:contract/id "C1" :contract/wage-type :piece}))))
+  (is (= :not-a-map (:labor/error (labor/validate-contract "x")))))
