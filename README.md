@@ -24,6 +24,37 @@ No network, no I/O. Amounts are plain numbers in the smallest currency unit
 (labor/payroll "P1" "worker" "2026-07" 21000 :deductions 2000)
 ```
 
+## Operator console (UI/UX)
+
+A read-only HTML dashboard renders contracts, timesheets and payroll (gross/deductions/net) for an operator. Built on
+[`kotoba-lang/html`](https://github.com/kotoba-lang/html) (Hiccup→HTML) +
+[`kotoba-lang/css`](https://github.com/kotoba-lang/css) (EDN→CSS). Pure data
+→ markup; the console never exposes a write surface (no `<form>`/`<button>`)
+— writes stay behind the governor.
+
+```clojure
+(require '[kotoba.labor.ui :as ui])
+
+(ui/dashboard
+  {:contracts [(labor/contract "C1" "worker" "employer" "nanny" :hourly 1500)]
+   :timesheets [(labor/timesheet "worker" "2026-07-01" 8)]
+   :payrolls [(labor/payroll "P1" "worker" "2026-07" 12000 :deductions 2000)]})
+;; => "<html>...read-only · governor-gated...</html>"
+```
+
+## Export (CSV / JSON)
+
+Audit-grade CSV (RFC-4180 quoting) and JSON (quote/backslash/newline
+escaped) for contracts, timesheets and payroll.
+
+```clojure
+(require '[kotoba.labor.export :as ex])
+
+(ex/contracts->csv contracts)
+(ex/payrolls->csv payrolls)   ; gross/deductions/net
+(ex/payrolls->json payrolls)
+```
+
 ## Why
 
 A household-employer operator must never pay a worker without a valid
