@@ -66,6 +66,12 @@ escaped) for contracts, timesheets and payroll.
 (ex/payrolls->json payrolls)
 ```
 
+## Test
+
+```sh
+clojure -M:test
+```
+
 ## Why
 
 A household-employer operator must never pay a worker without a valid
