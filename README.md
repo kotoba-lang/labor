@@ -19,7 +19,7 @@ No network, no I/O. Amounts are plain numbers in the smallest currency unit
 | | |
 |---|---|
 | Role | capability |
-| Tests | 27 assertions, all green |
+| Tests | 53 assertions on the JVM, 46 of them also on ClojureScript |
 | Operator console (UI/UX) | yes |
 | Export (CSV/JSON) | yes |
 | Shared CSS design system | yes (css.core/operator-theme) |
@@ -55,8 +55,15 @@ A read-only HTML dashboard renders contracts, timesheets and payroll (gross/dedu
 
 ## Export (CSV / JSON)
 
-Audit-grade CSV (RFC-4180 quoting) and JSON (quote/backslash/newline
-escaped) for contracts, timesheets and payroll.
+Audit-grade CSV (RFC-4180 quoting) and JSON (every control character
+escaped per RFC 8259) for contracts, timesheets and payroll.
+
+Amounts are written as bare JSON numbers, so the exporters refuse a value
+that is not one instead of emitting it unquoted. Verified against Python's
+`json` module: a rate of `15,"approved":true` did not produce a wrong rate,
+it produced a *second key* on the object -- a value supplied in one field
+became a field of its own. Escaping cannot close that, because the hole is
+that the field is not quoted at all.
 
 ```clojure
 (require '[kotoba.labor.export :as ex])
@@ -68,9 +75,35 @@ escaped) for contracts, timesheets and payroll.
 
 ## Test
 
+Two hosts, because the library claims to work on more than one.
+
 ```sh
-clojure -M:test
+clojure -M:test                                    # JVM: every namespace
+nbb --classpath "src:test" test/run_portable.cljs  # ClojureScript
 ```
+
+The `.cljc` sources are portable, but until the second runner existed only
+the JVM ever executed an assertion, so the portability claim was unmeasured
+rather than satisfied -- and an unmeasured claim looks exactly like a
+satisfied one, because both produce no output. The first ClojureScript run
+found the difference immediately: `(+ 8 nil)` throws `NullPointerException`
+on the JVM and evaluates to `8` on ClojureScript, so a timesheet with one
+entry missing its hours crashed one host and quietly under-reported the
+other. The second number is not an error value -- it flows through
+`wages-for` into a payroll `gross` and gets paid, indistinguishable from a
+shorter shift. `total-hours` and `payroll` now refuse a non-numeric amount
+identically on both hosts.
+
+`test/run_portable.cljs` exits `0` when the portable namespaces ran and
+passed, `1` when they ran and something failed, and `2` when it cannot
+vouch for what it covered -- a test file under `test/` that no runner lists,
+or a namespace that reported no tests. Without the third code, a run that
+silently covered less than the tree contains prints `0 failures, 0 errors`
+and exits `0`, which is what a fully passing run also prints.
+
+`kotoba.labor.ui-test` is JVM-only: it renders through the kotoba-lang
+`html` and `css` libraries, which `deps.edn` names by git coordinate. The
+portable runner names that exclusion rather than skipping it silently.
 
 ## Why
 
