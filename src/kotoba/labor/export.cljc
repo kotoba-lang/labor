@@ -43,6 +43,24 @@
 (defn- json-str [v]
   (str/escape (str (if (nil? v) "" v)) json-string-escapes))
 
+(defn- json-num
+  "Emit `v` as a bare JSON number, or refuse.
+
+  A bare interpolation is only correct when the value really is a number.
+  Anything else leaves the string layer entirely: a rate of `\"abc\"` renders
+  `\"rate\":abc`, which no parser accepts, and a rate of `15,\"approved\":true`
+  renders as a *second key* on the object -- a value supplied in one field
+  becomes a field of its own (verified against Python's json module: the parsed
+  object gains a key nobody exported). Escaping cannot help here, because the
+  hole is that the field is not quoted at all. So the export refuses instead of
+  emitting a document that either fails to parse or parses into something other
+  than what was exported."
+  [v ctx]
+  (if (number? v)
+    (str v)
+    (throw (ex-info (str "labor/export: " (name (:labor/field ctx)) " is not a number")
+                    (assoc ctx :labor/error :non-numeric-amount :labor/value v)))))
+
 (defn contracts->csv [contracts]
   (str/join "\n"
     (cons (csv-row ["contract_id" "worker" "role" "wage_type" "rate" "currency"])
@@ -83,8 +101,14 @@
                         "\"worker\":\"" (json-str (:contract/worker c)) "\","
                         "\"role\":\"" (json-str (:contract/role c)) "\","
                         "\"wage_type\":\"" (name (:contract/wage-type c)) "\","
-                        "\"rate\":" (or (:contract/rate c) 0) ","
-                        "\"currency\":\"" (or (:contract/currency c) "USD") "\"}")))
+                        "\"rate\":" (json-num (:contract/rate c)
+                                            {:labor/field :contract/rate :contract/id (:contract/id c)}) ","
+                        ;; Every other string field on this object goes through
+                        ;; json-str; currency did not, and `:currency` is an
+                        ;; ordinary argument of `labor/contract`. One quote in
+                        ;; it ended the JSON string early and the document
+                        ;; stopped parsing.
+                        "\"currency\":\"" (json-str (or (:contract/currency c) "USD")) "\"}")))
        "]"))
 
 (defn payrolls->json [payrolls]
@@ -94,7 +118,15 @@
                    (str "{\"payroll_id\":\"" (json-str (:payroll/id p)) "\","
                         "\"worker\":\"" (json-str (:payroll/worker p)) "\","
                         "\"period\":\"" (json-str (:payroll/period p)) "\","
-                        "\"gross\":" (or (:payroll/gross p) 0) ","
-                        "\"deductions\":" (or (:payroll/deductions p) 0) ","
-                        "\"net\":" (or (:payroll/net p) 0) "}")))
+                        "\"gross\":" (json-num (:payroll/gross p)
+                                             {:labor/field :payroll/gross :payroll/id (:payroll/id p)}) ","
+                        "\"deductions\":" (json-num (:payroll/deductions p)
+                                                  {:labor/field :payroll/deductions :payroll/id (:payroll/id p)}) ","
+                        "\"net\":" (json-num (:payroll/net p)
+                                            {:labor/field :payroll/net :payroll/id (:payroll/id p)}) ","
+                        ;; The record carries a currency and payrolls->csv
+                        ;; exports it; only the JSON dropped it, so the same
+                        ;; payroll described three unlabelled amounts to a
+                        ;; JSON reader and labelled amounts to a CSV reader.
+                        "\"currency\":\"" (json-str (or (:payroll/currency p) "USD")) "\"}")))
        "]"))

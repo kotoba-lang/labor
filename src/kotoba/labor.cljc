@@ -17,6 +17,26 @@
 
 (def wage-types #{:hourly :monthly})
 
+;; ---------------------------------------------------------------------------
+;; Amounts
+;; ---------------------------------------------------------------------------
+
+(defn- amount
+  "Return `v` when it is a number, otherwise refuse.
+
+  Arithmetic on a missing amount does not fail the same way on every host, so
+  a library that claims to be portable cannot leave it to the host. `(+ 8 nil)`
+  throws NullPointerException on the JVM and evaluates to `8` on ClojureScript
+  -- the same timesheet yields either a crash or a smaller number of hours than
+  the worker actually recorded, and the second one is paid out. Refusing is the
+  only answer that is the same on both hosts, and the only one that cannot be
+  mistaken for a total."
+  [v ctx]
+  (if (number? v)
+    v
+    (throw (ex-info (str "labor: " (name (:labor/field ctx)) " is not a number")
+                    (assoc ctx :labor/error :non-numeric-amount :labor/value v)))))
+
 (defn contract
   "Construct an employment contract. wage-type is :hourly or :monthly. rate
   is the smallest-currency-unit amount (per hour for hourly, per month for
@@ -46,9 +66,16 @@
    :ts/break  break})
 
 (defn total-hours
-  "Sum hours across a collection of timesheet entries."
+  "Sum hours across a collection of timesheet entries.
+
+  Every entry must carry a numeric `:ts/hours`; an entry that does not is
+  refused rather than skipped, since a skipped entry is indistinguishable
+  from a shorter shift once the number reaches payroll."
   [entries]
-  (reduce + (map :ts/hours entries)))
+  (reduce (fn [acc e]
+            (+ acc (amount (:ts/hours e) {:labor/field :ts/hours :ts/entry e})))
+          0
+          entries))
 
 (defn wages-for
   "Compute gross wages for timesheet entries under a contract. For an hourly
@@ -67,7 +94,8 @@
   "Construct a payroll record for a worker and period. gross is gross wages,
   deductions is the total withheld. net = gross - deductions."
   [id worker period gross & {:keys [deductions currency]}]
-  (let [ded (or deductions 0)]
+  (let [gross (amount gross {:labor/field :payroll/gross :payroll/id id})
+        ded   (amount (or deductions 0) {:labor/field :payroll/deductions :payroll/id id})]
     {:payroll/id         id
      :payroll/worker     worker
      :payroll/period     period
