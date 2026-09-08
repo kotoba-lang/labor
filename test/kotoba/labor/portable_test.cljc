@@ -16,7 +16,7 @@
 
   These tests run under both `clojure -M:test` and `nbb test/run_portable.cljs`.
   A test that only ever runs on one host cannot see a divergence between two."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]
             [kotoba.labor :as labor]
             [kotoba.labor.export :as ex]))
