@@ -35,7 +35,7 @@
 (ns run-portable
   (:require ["fs" :as fs]
             ["path" :as path]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [clojure.test :as t]
             [kotoba.labor-test]
             [kotoba.labor.export-test]
