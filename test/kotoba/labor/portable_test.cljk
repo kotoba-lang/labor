@@ -14,7 +14,7 @@
   an error value; it flows through `wages-for` into a payroll `gross` and gets
   paid. Nothing downstream can tell it from a shorter shift.
 
-  These tests run under both `clojure -M:test` and `nbb test/run_portable.cljk`.
+  These tests run under both `kbb -M:test` and `kbb --backend sci test/run_portable.cljk`.
   A test that only ever runs on one host cannot see a divergence between two."
   (:require [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]

@@ -1,10 +1,10 @@
 ;; run_portable.cljs — run the portable part of the suite on a second host.
 ;;
-;;   nbb --classpath "src:test" test/run_portable.cljk
+;;   kbb --backend sci --classpath "src:test" test/run_portable.cljk
 ;;
 ;; Why this file exists. kotoba.labor's docstring and the README both say the
 ;; library is portable .cljc across JVM / ClojureScript / SCI / GraalVM, and
-;; deps.edn shipped exactly one runner: `clojure -M:test`. So ClojureScript
+;; deps.edn shipped exactly one runner: `kbb -M:test`. So ClojureScript
 ;; never ran an assertion. The claim was not failing, it was unmeasured -- and
 ;; an unmeasured claim and a measured, satisfied one produce the same output,
 ;; which is nothing. Running the same .cljc files on a second host is the only
@@ -47,7 +47,7 @@
     kotoba.labor.portable-test])
 
 (def excluded
-  "Test namespaces deliberately left to `clojure -M:test`, with the reason.
+  "Test namespaces deliberately left to `kbb -M:test`, with the reason.
 
   kotoba.labor.ui-test renders through the kotoba-lang html and css libraries,
   which deps.edn names by git coordinate; only the JVM toolchain resolves
