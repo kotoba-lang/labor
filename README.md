@@ -78,8 +78,8 @@ that the field is not quoted at all.
 Two hosts, because the library claims to work on more than one.
 
 ```sh
-clojure -M:test                                    # JVM: every namespace
-nbb --classpath "src:test" test/run_portable.cljk  # ClojureScript
+kbb -M:test                                    # JVM: every namespace
+kbb --backend sci --classpath "src:test" test/run_portable.cljk  # ClojureScript
 ```
 
 The `.cljc` sources are portable, but until the second runner existed only
