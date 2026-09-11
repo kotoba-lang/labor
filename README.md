@@ -79,7 +79,7 @@ Two hosts, because the library claims to work on more than one.
 
 ```sh
 clojure -M:test                                    # JVM: every namespace
-nbb --classpath "src:test" test/run_portable.cljs  # ClojureScript
+nbb --classpath "src:test" test/run_portable.cljk  # ClojureScript
 ```
 
 The `.cljc` sources are portable, but until the second runner existed only
@@ -94,7 +94,7 @@ other. The second number is not an error value -- it flows through
 shorter shift. `total-hours` and `payroll` now refuse a non-numeric amount
 identically on both hosts.
 
-`test/run_portable.cljs` exits `0` when the portable namespaces ran and
+`test/run_portable.cljk` exits `0` when the portable namespaces ran and
 passed, `1` when they ran and something failed, and `2` when it cannot
 vouch for what it covered -- a test file under `test/` that no runner lists,
 or a namespace that reported no tests. Without the third code, a run that

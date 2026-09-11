@@ -1,6 +1,6 @@
 ;; run_portable.cljs — run the portable part of the suite on a second host.
 ;;
-;;   nbb --classpath "src:test" test/run_portable.cljs
+;;   nbb --classpath "src:test" test/run_portable.cljk
 ;;
 ;; Why this file exists. kotoba.labor's docstring and the README both say the
 ;; library is portable .cljc across JVM / ClojureScript / SCI / GraalVM, and
